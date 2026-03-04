@@ -25,6 +25,9 @@ RUN node -e "const p=require('./package.json'); \
     require('fs').writeFileSync('./package.json',JSON.stringify(p))" && \
     npm install -g pnpm && pnpm install --frozen-lockfile
 COPY src/ ./src/
+# Shared tool metadata consumed by src/agent-server.ts via tool-display.ts.
+COPY apps/shared/OpenClawKit/Sources/OpenClawKit/Resources/tool-display.json \
+  ./apps/shared/OpenClawKit/Sources/OpenClawKit/Resources/tool-display.json
 # Run only the agent-engine entry — skips canvas bundle, DTS gen, and other
 # release steps that are part of the full pnpm build pipeline.
 RUN node_modules/.bin/tsdown --config tsdown.config.agent-engine.ts

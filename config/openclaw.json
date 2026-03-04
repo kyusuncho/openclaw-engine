@@ -1,0 +1,13 @@
+{
+  "agents": {
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "model": "openai/gpt-4o",
+        "workspace": "/app/office",
+        "agentDir": "/app/system/agents/main/agent"
+      }
+    ]
+  }
+}
