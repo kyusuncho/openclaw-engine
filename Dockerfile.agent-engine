@@ -1,0 +1,52 @@
+FROM node:22-alpine AS base
+WORKDIR /app
+# python3/make/g++ for native modules (e.g. better-sqlite3) used by the agent runtime.
+# cmake is NOT needed — koffi is blocked via neverBuiltDependencies below.
+RUN apk add --no-cache python3 make g++
+
+# --- dependency layer (prod runtime deps) ---
+FROM base AS deps
+COPY package.json pnpm-lock.yaml ./
+# Inject pnpm.neverBuiltDependencies to skip koffi (voice/Teams FFI) and
+# node-llama-cpp (local LLM runner) — neither is imported by agent-server.
+# Modification is ephemeral to this Docker layer; the lockfile is unaffected.
+RUN node -e "const p=require('./package.json'); \
+    const skip=['koffi','node-llama-cpp']; \
+    p.pnpm.onlyBuiltDependencies=p.pnpm.onlyBuiltDependencies.filter(n=>!skip.includes(n)); \
+    require('fs').writeFileSync('./package.json',JSON.stringify(p))" && \
+    npm install -g pnpm && pnpm install --frozen-lockfile --prod
+
+# --- build layer ---
+FROM base AS build
+COPY package.json pnpm-lock.yaml tsconfig.json tsdown.config.agent-engine.ts ./
+RUN node -e "const p=require('./package.json'); \
+    const skip=['koffi','node-llama-cpp']; \
+    p.pnpm.onlyBuiltDependencies=p.pnpm.onlyBuiltDependencies.filter(n=>!skip.includes(n)); \
+    require('fs').writeFileSync('./package.json',JSON.stringify(p))" && \
+    npm install -g pnpm && pnpm install --frozen-lockfile
+COPY src/ ./src/
+# Run only the agent-engine entry — skips canvas bundle, DTS gen, and other
+# release steps that are part of the full pnpm build pipeline.
+RUN node_modules/.bin/tsdown --config tsdown.config.agent-engine.ts
+
+# --- runtime layer ---
+FROM node:22-alpine AS runtime
+WORKDIR /app
+
+COPY --from=build /app/dist/ ./dist/
+COPY --from=deps /app/node_modules/ ./node_modules/
+COPY package.json ./
+# Bake the minimal agent config — NOT a volume mount so it survives any host overlay.
+COPY config/openclaw.json /app/config/openclaw.json
+
+# /app/system — mutable state: sessions, auth profiles, logs
+# /app/office — agent workspace: IDENTITY.md, SOUL.md, TOOLS.md, AGENTS.md, user files
+VOLUME ["/app/system", "/app/office"]
+
+ENV OPENCLAW_STATE_DIR=/app/system
+ENV OPENCLAW_CONFIG_PATH=/app/config/openclaw.json
+ENV NODE_ENV=production
+
+EXPOSE 50051
+
+ENTRYPOINT ["node", "dist/agent-server.js"]
