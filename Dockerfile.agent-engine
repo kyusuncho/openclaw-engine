@@ -43,8 +43,8 @@ COPY package.json ./
 COPY config/openclaw.json /app/config/openclaw.json
 
 # /app/system — mutable state: sessions, auth profiles, logs
-# /app/office — agent workspace: IDENTITY.md, SOUL.md, TOOLS.md, AGENTS.md, user files
-VOLUME ["/app/system", "/app/office"]
+# /app/workspace — agent workspace: IDENTITY.md, SOUL.md, TOOLS.md, AGENTS.md, user files
+VOLUME ["/app/system", "/app/workspace"]
 
 ENV OPENCLAW_STATE_DIR=/app/system
 ENV OPENCLAW_CONFIG_PATH=/app/config/openclaw.json

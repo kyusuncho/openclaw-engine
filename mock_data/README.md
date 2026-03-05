@@ -12,10 +12,10 @@ docker build -t clawster-engine:latest -f Dockerfile.agent-engine .
 
 # 2. Create the mock bounded directories on your host machine
 mkdir -p ./mock_system/agents/main/agent
-mkdir -p ./mock_office
+mkdir -p ./mock_workspace
 
 # 3. Create a basic identity.md so the agent knows who it is
-echo "You are a helpful coding assistant." > ./mock_office/IDENTITY.md
+echo "You are a helpful coding assistant." > ./mock_workspace/IDENTITY.md
 
 # 4. Inject your API key into an env file
 echo "OPENAI_API_KEY=sk-your-actual-api-key-here" > ./mock_system/.env
@@ -24,7 +24,7 @@ echo "OPENAI_API_KEY=sk-your-actual-api-key-here" > ./mock_system/.env
 docker run -p 50051:50051 \
   --env-file ./mock_system/.env \
   -v $(pwd)/mock_system:/app/system \
-  -v $(pwd)/mock_office:/app/office \
+  -v $(pwd)/mock_workspace:/app/workspace \
   clawster-engine:latest
 
 ```
@@ -39,8 +39,8 @@ curl -X POST http://localhost:50051/execute \
   -d '{
     "sender_id": "user_123",
     "intent": "call",
-    "message": "Please write a simple python hello world script and save it to the office folder.",
-    "office_pointers": ["/app/office/"]
+    "message": "Please write a simple python hello world script and save it to the workspace folder.",
+    "workspace_pointers": ["/app/workspace/"]
   }'
 
 ```
@@ -48,7 +48,7 @@ curl -X POST http://localhost:50051/execute \
 **What you should see:**
 
 1. The `curl` command should return a successful JSON response with the agent's reply.
-2. More importantly, if you look inside your `./mock_office/` folder on your host machine, you should physically see the new Python script the agent created.
+2. More importantly, if you look inside your `./mock_workspace/` folder on your host machine, you should physically see the new Python script the agent created.
 
 ### Step 3: Moving to the Clawster Orchestrator
 

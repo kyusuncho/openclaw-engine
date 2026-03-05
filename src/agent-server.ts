@@ -10,7 +10,7 @@ import { resolveSessionTranscriptPath } from "./config/sessions/paths.js";
 
 const PORT = 50051;
 const AGENT_ID = "main";
-const WORKSPACE_DIR = "/app/office";
+const WORKSPACE_DIR = "/app/workspace";
 // ~24 days: effectively "no timeout" (same sentinel used by resolveAgentTimeoutMs).
 const NO_TIMEOUT_MS = 2_147_000_000;
 
@@ -18,7 +18,7 @@ interface ExecutePayload {
   sender_id: string;
   intent: string;
   message: string;
-  office_pointers: string[];
+  workspace_pointers: string[];
 }
 
 // Persist one session UUID per sender for the lifetime of the process so
@@ -39,10 +39,10 @@ app.post("/execute", async (req: Request, res: Response) => {
     typeof body.sender_id !== "string" ||
     typeof body.intent !== "string" ||
     typeof body.message !== "string" ||
-    !Array.isArray(body.office_pointers)
+    !Array.isArray(body.workspace_pointers)
   ) {
     res.status(400).json({
-      error: "Invalid payload: sender_id, intent, message, office_pointers required",
+      error: "Invalid payload: sender_id, intent, message, workspace_pointers required",
     });
     return;
   }
